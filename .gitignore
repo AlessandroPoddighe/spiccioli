@@ -1,0 +1,38 @@
+# Segreti e configurazione locale — MAI committare
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.age
+age-key*.txt
+supabase/functions/.env
+supabase/.env
+supabase/.temp/
+supabase/.branches/
+
+# Dump e backup (anche cifrati non vanno nel repo dell'app)
+*.dump
+*.sql.gz
+backups/
+
+# Dipendenze e build
+node_modules/
+dist/
+web/dist/
+.wrangler/
+.vite/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.deno/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
