@@ -364,6 +364,14 @@ flowchart TB
   ricrea il DB dev da `main` (solo sandbox, dati finti).
 - **Deploy prod** (merge su `main`): job concatenati con `needs` — migrazioni →
   Edge Functions → frontend. Un errore ferma i passi successivi.
+- **Workflow riusabile `deploy.yml`** (stesso codice per dev e prod):
+  *preflight* (salta il deploy, senza fallire, se l'Environment non è completo)
+  → `db push` + `config push` → `secrets set` (solo `HEALTH_TOKEN` e
+  `FRONTEND_URL`) + `functions deploy --use-api` → build + `wrangler deploy` →
+  verifiche (frontend risponde, `health` con DB ok, solo `api` esposto,
+  registrazioni chiuse).
+- **Concorrenza**: un run di CI non viene mai annullato a metà (potrebbe essere
+  dentro un deploy); i deploy su dev sono serializzati tra tutte le PR.
 - **Migrazioni additive**: uno script in CI cerca `DROP`, `RENAME`,
   `ALTER … TYPE`, `TRUNCATE`, `DELETE` senza `WHERE` nelle nuove migrazioni; se
   ne trova, il check fallisce a meno che la PR non abbia l'etichetta
@@ -381,7 +389,6 @@ flowchart TB
 |---|---|---|---|
 | `EB_APP_ID` (dev: app sandbox, prod: app production) | Supabase → Edge Functions → Secrets | tu, dal browser | sì (non critico ma riservato) |
 | `EB_PRIVATE_KEY` (PEM) | Supabase → Edge Functions → Secrets | tu, dal browser (copia/incolla dal file `.pem` scaricato) | **sì, critico** |
-| `FRONTEND_URL` | Supabase → Edge Functions → Secrets | CI (`supabase secrets set`) | no |
 | token del cron | Vault di Postgres | **generato dentro il DB** dalla migrazione, mai visto da nessuno | sì |
 | `SUPABASE_ACCESS_TOKEN` (PAT con scope sul solo progetto) | GitHub → Environment `dev` / `production` | tu | **sì** |
 | `SUPABASE_DB_PASSWORD` | GitHub → Environment `dev` / `production` | tu | **sì** |
@@ -390,7 +397,8 @@ flowchart TB
 | `CLOUDFLARE_API_TOKEN` (permesso "Workers Scripts: Edit") | GitHub → Environment | tu | **sì** |
 | `CLOUDFLARE_ACCOUNT_ID` | GitHub → Environment (variable) | tu | no |
 | `BACKUP_AGE_RECIPIENT` (chiave pubblica age) | GitHub → Environment `production` (variable) | tu | no |
-| `HEALTH_TOKEN` | GitHub secret + Supabase secret | tu (generato dal browser) | sì, basso impatto |
+| `HEALTH_TOKEN` | GitHub → Environment (la CI lo copia nei secret Supabase) | tu (generato dal password manager) | sì, basso impatto |
+| `FRONTEND_URL` | GitHub → Environment (variable); la CI lo copia nei secret Supabase | tu | no |
 
 La chiave privata Enable Banking **non passa mai** da GitHub né dall'ambiente
 dell'agente. Il codice accetta il PEM incollato in qualunque forma (a capo

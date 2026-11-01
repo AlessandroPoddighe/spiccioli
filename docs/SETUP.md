@@ -1,7 +1,7 @@
 # Spiccioli — Guida di configurazione (solo browser)
 
-> **Stato: bozza (Fase 1).** Le sezioni 1 e 6.4–6.5 sono complete; le altre le
-> seguiremo insieme nelle fasi indicate e verranno corrette mentre le esegui.
+> **Stato: Fase 2.** Sezioni 1–3 e 5–9 complete; 4 e 10 si completano nelle
+> Fasi 3 e 7. La guida viene corretta mentre la segui, dove l'interfaccia differisce.
 > I nomi dei menu sono stati verificati sulla documentazione ufficiale di
 > ottobre 2026; dove un'interfaccia può differire leggermente è segnato con ⚠️.
 
@@ -32,7 +32,8 @@ privata Enable Banking e token.
 | Access token Supabase | 🔒 | Supabase → Account → Access Tokens | GitHub → Environment → secret `SUPABASE_ACCESS_TOKEN` |
 | `app_id` Enable Banking (sandbox/production) | 🔒 | Nome del file `.pem` scaricato | Supabase → Edge Functions → Secrets → `EB_APP_ID` |
 | Chiave privata Enable Banking (`.pem`) | 🔒🔒 | Scaricata dal browser alla registrazione | **Solo** Supabase → Edge Functions → Secrets → `EB_PRIVATE_KEY` + password manager |
-| Health token (dev/prod) | 🔒 | Generato dal password manager | Supabase secret `HEALTH_TOKEN` + GitHub secret `HEALTH_TOKEN` |
+| Health token (dev/prod) | 🔒 | Generato dal password manager | **Solo** GitHub → Environment → secret `HEALTH_TOKEN` (la CI lo copia su Supabase) |
+| Indirizzo del frontend (dev/prod) | 🌐 | `https://spiccioli-dev.<sottodominio>.workers.dev` / `https://spiccioli.<sottodominio>.workers.dev` | GitHub → Environment → variabile `FRONTEND_URL` |
 | Cloudflare Account ID | 🌐 | Cloudflare → Workers & Pages → *Account Details* | GitHub → Environment → variabile `CLOUDFLARE_ACCOUNT_ID` |
 | Cloudflare API token | 🔒 | Cloudflare → Account API tokens | GitHub → Environment → secret `CLOUDFLARE_API_TOKEN` |
 
@@ -156,7 +157,7 @@ il secret (§5).
 
 ---
 
-## 5. Secret delle Edge Functions *(Fase 2–3)*
+## 5. Secret delle Edge Functions *(Fase 3)*
 
 Per il progetto **dev** (e più avanti, con i valori di produzione, per **prod**):
 
@@ -167,7 +168,9 @@ Per il progetto **dev** (e più avanti, con i valori di produzione, per **prod**
 |---|---|
 | `EB_APP_ID` | l'`app_id` (nome del file `.pem` senza estensione) |
 | `EB_PRIVATE_KEY` | **tutto** il contenuto del file `.pem`, dalla riga `-----BEGIN` alla riga `-----END` comprese |
-| `HEALTH_TOKEN` | una stringa casuale di 40 caratteri (lettere e cifre) generata dal password manager; salvala, servirà anche su GitHub |
+
+Gli altri secret delle function (`HEALTH_TOKEN`, `FRONTEND_URL`) li imposta la
+CI a ogni deploy: non aggiungerli qui.
 
 **PEM multilinea.** Incolla il contenuto così com'è: se il campo unisce le righe
 o le trasforma in spazi va bene lo stesso, il codice ricostruisce la chiave
@@ -184,17 +187,38 @@ function `health` riporta `private_key_configured: true` (verifica nel §8).
 
 1. Supabase → avatar in alto a destra → **Account preferences → Access Tokens**
    (`https://supabase.com/dashboard/account/tokens`) → **Generate new token**.
-2. Nome `github-actions-dev`; **limita il token al solo progetto `spiccioli-dev`**
-   e concedi solo i permessi elencati qui sotto. ⚠️ L'elenco esatto viene
-   confermato in Fase 2 provando il primo deploy.
+2. Nome `github-actions-dev`, scadenza **1 anno**; **limita il token al solo
+   progetto `spiccioli-dev`** e concedi esattamente i permessi della tabella.
 3. Copia subito il token (inizia con `sbp_`): non verrà più mostrato.
 4. Ripeti per `github-actions-prod` limitato a `spiccioli-prod`.
 
-Permessi necessari ai comandi usati dai workflow (`link`, `db push`,
-`config push`, `functions deploy`, `secrets set`): *Project Settings*, *API
-Keys*, *API Key Secrets* (Read); *Database config*, *Auth config*, *Data API
-config*, *Storage config* (Read/Write); *Edge Functions* e *Edge Function
-Secrets* (Write).
+Permessi (nomi come compaiono nel modulo; ricavati dai requisiti dichiarati
+dalla Supabase CLI per `link`, `db push`, `config push`, `secrets set`,
+`functions deploy`, `db reset`):
+
+| Sezione | Permesso | Accesso |
+|---|---|---|
+| Project | **Project Settings** | Read-write |
+| Database | **Database** | Read-write |
+| Database | **Database Config** | Read-write |
+| Database | **Network Restrictions** | Read-write |
+| Database | **Network Bans** | Read-write |
+| Database | **SSL Enforcement** | Read-write |
+| Database | **Connection Pooling** | Read |
+| Database | **Database Webhooks** | Read-write |
+| Application services | **API Keys** | Read |
+| Application services | **API Key Secrets** | Read |
+| Application services | **Auth Config** | Read-write |
+| Application services | **Data API Config** | Read-write |
+| Application services | **Edge Functions** | Read-write |
+| Application services | **Edge Function Secrets** | Read-write |
+| Application services | **Realtime Config** | Read |
+| Application services | **Storage Config** | Read-write |
+| Infrastructure and delivery | **Production Branches** | Read |
+| Infrastructure and delivery | **Add-ons** | Read |
+
+Nessun permesso su *Account and organization*: il token non può creare o
+cancellare progetti.
 
 ### 6.2 Environments `dev` e `production`
 
@@ -206,7 +230,7 @@ Secrets* (Write).
    |---|---|
    | `SUPABASE_ACCESS_TOKEN` | token `github-actions-dev` (§6.1) |
    | `SUPABASE_DB_PASSWORD` | password DB di dev (§2.2) |
-   | `HEALTH_TOKEN` | lo stesso del §5 per dev |
+   | `HEALTH_TOKEN` | stringa casuale di 40 lettere e cifre generata dal password manager (diversa per dev e prod) |
    | `CLOUDFLARE_API_TOKEN` | §7 |
 
 3. Sezione **Environment variables** → **Add variable**:
@@ -216,6 +240,7 @@ Secrets* (Write).
    | `SUPABASE_PROJECT_REF` | ref di dev |
    | `SUPABASE_URL` | `https://<ref-dev>.supabase.co` |
    | `SUPABASE_PUBLISHABLE_KEY` | publishable key di dev |
+   | `FRONTEND_URL` | `https://spiccioli-dev.<sottodominio>.workers.dev` (senza `/` finale; per prod `https://spiccioli.<sottodominio>.workers.dev`) |
    | `CLOUDFLARE_ACCOUNT_ID` | §7 |
 
 4. Ripeti per **`production`** con i valori di prod, e in più:
@@ -225,7 +250,9 @@ Secrets* (Write).
    che girano su `main`.
 
 ✅ In **Settings → Environments** vedi `dev` e `production`; `production` mostra
-"1 branch rule".
+"1 branch rule". Ogni Environment ha 4 segreti e 5 variabili. Finché ne manca
+qualcuno, il deploy viene **saltato** (non fallisce) e il riepilogo del workflow
+elenca cosa manca.
 
 ### 6.3 Protezione di `main` (ruleset) — *dopo il primo run della CI*
 
@@ -304,10 +331,18 @@ contenga un segreto riconoscibile.
 
 1. Fai il merge della PR della Fase 2 (pulsante **Merge pull request**).
 2. Repository → tab **Actions** → workflow **Deploy produzione**: i job
-   *Migrazioni*, *Edge Functions*, *Frontend* diventano verdi in sequenza.
+   *Configurazione ambiente*, *Migrazioni e configurazione Supabase*, *Edge
+   Functions*, *Frontend (Cloudflare Workers)* e *Verifiche dopo il deploy*
+   diventano verdi in sequenza (se uno fallisce, i successivi non partono).
 3. **Da PC**: apri `https://spiccioli.<sottodominio>.workers.dev` → accedi con
-   email e password di prod → attiva il TOTP → arrivi alla Home.
-4. **Da iPhone**: apri lo stesso indirizzo in **Safari** → accedi → pulsante
+   email e password di prod → l'app mostra **Attiva il secondo fattore**:
+   inquadra il QR con l'app **Password** dell'iPhone (o un'altra app
+   authenticator) e inserisci il codice → arrivi alla Home, che deve mostrare
+   *"Database collegato · sessione protetta (aal2)"*.
+4. Subito dopo, in **Altro → Aggiungi un dispositivo**, registra un **secondo**
+   autenticatore (es. il password manager del PC): è la tua copia di riserva.
+5. **Da iPhone**: apri lo stesso indirizzo in **Safari** → accedi (codice dall'app
+   Password: iOS lo propone sopra la tastiera) → pulsante
    **Condividi** (quadrato con freccia) → **Aggiungi alla schermata Home** →
    **Aggiungi**. Apri l'icona *Spiccioli*: l'app si apre a tutto schermo.
 
@@ -323,9 +358,11 @@ non copre l'intestazione.
    commento con il link `https://spiccioli-dev.<sottodominio>.workers.dev`.
 3. Apri il link da PC e/o iPhone (credenziali di **dev**). Il badge in basso
    deve mostrare `dev PR #<numero> · <commit>`: se mostra un'altra PR, un'altra
-   PR è stata deployata dopo; rilancia il job dalla tab *Checks* della tua PR.
+   PR è stata deployata dopo; rilancia il workflow dalla tab *Checks* della tua
+   PR (**Re-run all jobs**). I deploy su dev avvengono uno alla volta.
 4. Se una PR abbandonata ha lasciato dev "sporco": tab **Actions** → workflow
-   **Reset dev** → **Run workflow** (cancella solo i dati finti di sandbox).
+   **Reset dev** → **Run workflow** → scrivi `RESET` nel campo di conferma →
+   **Run workflow** (cancella solo i dati finti di sandbox e riapplica `main`).
 
 ---
 
@@ -363,6 +400,9 @@ destra → **Re-run failed jobs**.
 | Sintomo | Causa probabile | Soluzione |
 |---|---|---|
 | L'app mostra "Configurazione mancante" | Variabili dell'Environment GitHub mancanti | Controlla §6.2 e rilancia il deploy |
+| Il workflow dice "Deploy su `dev` saltato" | Environment non ancora completo | Il riepilogo del run elenca i valori mancanti; aggiungili (§6.2) e rilancia |
+| La Home dice "Database non raggiungibile" | Progetto in pausa o chiave publishable errata | Dashboard Supabase: **Resume project**; poi controlla `SUPABASE_PUBLISHABLE_KEY` |
+| Il codice TOTP viene sempre rifiutato | Ora del telefono non sincronizzata | iPhone: Impostazioni → Generali → Data e ora → **Automatiche** |
 | Login: "Email o password non corretti" | Utente creato nell'altro progetto (dev/prod) | §3 per il progetto giusto |
 | Deploy fallisce su `supabase link` / `config push` con *permission denied* | Token Supabase senza i permessi necessari | Rigenera il token con i permessi del §6.1 |
 | Deploy fallisce con *password authentication failed* | Password DB errata nel secret | Reset password (§2.3) e aggiorna `SUPABASE_DB_PASSWORD` |
