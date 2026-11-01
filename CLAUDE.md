@@ -117,6 +117,7 @@ Controlli trasversali:
 
 ```bash
 gitleaks git --no-banner --redact .  # anche prima di ogni commit dell'agente
+actionlint                           # validità dei workflow GitHub
 scripts/check-destructive-migrations.sh origin/main
 ```
 
