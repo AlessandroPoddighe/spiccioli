@@ -1,6 +1,6 @@
 # Spiccioli — Architettura
 
-> Stato: **proposta, in attesa di approvazione** (Fase 0 — pianificazione).
+> Stato: **approvata il 2026-11-01** (repository pubblico, ADR-0003).
 > Le scelte non banali sono motivate negli ADR in [`docs/adr/`](adr/README.md).
 > Le voci marcate **[DA VERIFICARE]** non è stato possibile confermarle sulla
 > documentazione ufficiale durante la pianificazione (vedi §12) e verranno
@@ -77,7 +77,7 @@ flowchart LR
 | Hosting | Cloudflare Workers con Static Assets (ADR-0001) | HTTPS, SPA fallback, header di sicurezza, URL stabile per dev e prod. |
 | Auth | Supabase Auth | Utente unico, registrazioni disattivate, MFA TOTP obbligatoria (ADR-0005). |
 | Data API | PostgREST di Supabase | Espone **solo** lo schema `api` (ADR-0006). |
-| Edge Functions | Deno, `@supabase/server`, `npm:@supabase/supabase-js@2` | Tutto ciò che tocca Enable Banking: firma JWT, auth, callback, sync. |
+| Edge Functions | Deno, `@supabase/server`, `npm:postgres` (connessione diretta via `SUPABASE_DB_URL`) | Tutto ciò che tocca Enable Banking: firma JWT, auth, callback, sync. Gli schemi interni (`raw`, `core`, `internal`) non sono raggiungibili dalla Data API: le function li usano con una connessione Postgres diretta, chiamando funzioni SQL `internal.*`. |
 | Database | Postgres 17 (Supabase) | Schemi `raw` → `core` → `mart` → `api`; trasformazioni in SQL. |
 | Scheduling | `pg_cron` + `pg_net` + Vault | Sync giornaliera, avanzamento dei job a blocchi, refresh materializzate. |
 | CI/CD | GitHub Actions + Supabase CLI + Wrangler | Test, deploy dev su PR, deploy prod su `main`, backup, keep-alive. |
@@ -437,9 +437,9 @@ per progetto.
 
 ### 11.4 GitHub Actions
 
-Dipende da ADR-0003: repo pubblico → minuti illimitati; repo privato → 2.000
-minuti/mese. Stima per PR completa (CI + e2e + deploy dev) ≈ 15 minuti; backup e
-keep-alive ≈ 60 minuti/mese.
+Repository pubblico (ADR-0003): minuti dei runner standard illimitati. Stima per
+PR completa (CI + e2e + deploy dev) ≈ 15 minuti; backup e keep-alive ≈ 60
+minuti/mese.
 
 ### 11.5 Cloudflare Workers Free
 
@@ -447,6 +447,9 @@ Le richieste agli asset statici sono gratuite e non conteggiate; nessun Worker
 script lato server. Nessun limite pratico per un utente.
 
 ## 12. Verifica delle fonti
+
+Aggiornamento 2026-11-01: la rete della sessione è stata aperta; i punti
+[DA VERIFICARE] su Enable Banking vengono chiusi in Fase 3 sulla API reference.
 
 Durante la pianificazione l'ambiente dell'agente **non poteva raggiungere**
 `enablebanking.com`, `supabase.com`, `developers.cloudflare.com`,

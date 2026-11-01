@@ -1,6 +1,6 @@
 # ADR-0003 — Repository pubblico vs privato sul piano GitHub Free
 
-Stato: **Decisione richiesta all'utente**
+Stato: **Accettato (2026-11-01): opzione A, repository pubblico**
 
 ## Contesto
 

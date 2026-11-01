@@ -1,6 +1,6 @@
 # ADR-0002 — Due progetti Supabase: dev (sandbox) e prod
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

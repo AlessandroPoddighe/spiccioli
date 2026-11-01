@@ -36,3 +36,4 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 *.log
+dev-dist/

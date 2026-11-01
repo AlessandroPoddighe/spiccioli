@@ -1,6 +1,6 @@
 # ADR-0005 — Autenticazione: email + password + TOTP obbligatoria; passkey in seguito
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

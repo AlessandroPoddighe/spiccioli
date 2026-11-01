@@ -1,6 +1,6 @@
 # ADR-0016 — Configurazione Supabase come codice (`supabase config push`)
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

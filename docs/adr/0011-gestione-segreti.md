@@ -1,6 +1,6 @@
 # ADR-0011 — Gestione dei segreti
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Decisione
 

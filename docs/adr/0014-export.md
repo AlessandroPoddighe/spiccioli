@@ -1,6 +1,6 @@
 # ADR-0014 — Export CSV e Parquet nel browser, senza duckdb-wasm
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Decisione
 

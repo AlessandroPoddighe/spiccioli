@@ -1,6 +1,6 @@
 # ADR-0013 — Keep-alive e avvisi di scadenza del consenso
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

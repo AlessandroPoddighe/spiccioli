@@ -1,6 +1,6 @@
 # ADR-0004 — Callback di Enable Banking su Edge Function
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

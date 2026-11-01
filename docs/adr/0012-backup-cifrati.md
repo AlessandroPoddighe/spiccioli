@@ -1,6 +1,6 @@
 # ADR-0012 — Backup cifrati con `age` via GitHub Actions
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

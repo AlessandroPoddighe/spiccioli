@@ -1,6 +1,6 @@
 # ADR-0006 — Schemi `raw`/`core`/`mart` privati, solo `api` esposto
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

@@ -6,8 +6,7 @@ Architettura: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Decisioni:
 [`docs/adr/`](docs/adr/README.md). Guida utente: `docs/SETUP.md`,
 `docs/OPERATIONS.md`.
 
-> Stato: **Fase 0 (pianificazione)**. La struttura e i comandi sotto sono quelli
-> previsti; verranno creati in Fase 1 e questo file aggiornato di conseguenza.
+> Stato: **Fase 1 (scaffolding)**. Le voci marcate *(fase N)* non esistono ancora.
 
 ## Regole non negoziabili
 
@@ -26,10 +25,13 @@ Architettura: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Decisioni:
 - I deploy li fa **solo GitHub Actions**. L'agente non esegue mai
   `supabase link`/`db push`/`functions deploy`/`wrangler deploy` verso progetti
   remoti.
-- Una branch e una PR per fase; check verdi prima di chiedere il merge.
+- Una PR per fase, check verdi prima di chiedere il merge. Il branch di lavoro
+  dell'agente è `claude/expense-analyzer-enable-banking-wofpap`: dopo il merge
+  di una fase si riparte da `main` con lo stesso nome (mai commit sopra una PR
+  già mergiata).
 - Documentazione e UI in **italiano**; identificatori di codice in inglese.
 
-## Struttura del repository (prevista)
+## Struttura del repository
 
 ```
 .
@@ -40,40 +42,45 @@ Architettura: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Decisioni:
 ├── .github/
 │   ├── dependabot.yml
 │   └── workflows/
-│       ├── ci.yml            # PR: lint, typecheck, test, db, e2e, build → deploy-dev
-│       ├── deploy-prod.yml   # push su main: migrazioni → functions → frontend
-│       ├── reset-dev.yml     # manuale
-│       ├── backup.yml        # schedulato (prod)
-│       ├── restore.yml       # manuale
-│       └── keepalive.yml     # schedulato (dev + prod)
+│       ├── ci.yml            # PR: web, functions, database, e2e, security (+ deploy-dev in fase 2)
+│       ├── deploy-prod.yml   # (fase 2) push su main: migrazioni → functions → frontend
+│       ├── reset-dev.yml     # (fase 2) manuale
+│       ├── backup.yml        # (fase 7) schedulato (prod)
+│       ├── restore.yml       # (fase 7) manuale
+│       └── keepalive.yml     # (fase 7) schedulato (dev + prod)
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── SETUP.md
 │   ├── OPERATIONS.md
 │   └── adr/
-├── scripts/                  # utility CI (es. controllo migrazioni distruttive)
+├── .gitleaks.toml            # regole extra: sb_secret_, sbp_, PEM
+├── scripts/
+│   ├── check-destructive-migrations.sh   # CI: solo migrazioni additive
+│   └── check-data-api-exposure.sh        # CI: solo lo schema api è esposto
 ├── supabase/
 │   ├── config.toml           # fonte di verità della config (ADR-0016)
 │   ├── migrations/           # YYYYMMDDHHMMSS_descrizione.sql
 │   ├── seed.sql              # SOLO dati sintetici per lo stack locale/CI
 │   ├── tests/                # pgTAP: *.test.sql
 │   └── functions/
-│       ├── deno.json
-│       ├── _shared/          # client Enable Banking, JWT, db, http, errori
-│       ├── eb-aspsps/
-│       ├── eb-auth-start/
-│       ├── eb-callback/
-│       ├── sync-worker/
-│       └── health/
+│       ├── deno.json         # fmt/lint/test (CI); ogni function ha il suo deno.json
+│       ├── _shared/          # db.ts (postgres diretto), http.ts, log.ts (redazione)
+│       ├── health/           # keep-alive/diagnostica, token x-health-token
+│       ├── eb-aspsps/        # (fase 3)
+│       ├── eb-auth-start/    # (fase 3)
+│       ├── eb-callback/      # (fase 3)
+│       └── sync-worker/      # (fase 4)
 └── web/                      # frontend React + Vite
     ├── package.json
     ├── wrangler.jsonc
-    ├── public/_headers
-    ├── src/
+    ├── vite.config.ts        # genera dist/_headers (CSP) e il service worker
+    ├── scripts/              # check-bundle.mjs (post-build), generate-icons.mjs
+    ├── public/               # favicon + icone PWA (PNG generati e committati)
+    ├── src/                  # app (env.ts, routes.tsx, auth/, pages/, components/)
     └── e2e/                  # Playwright
 ```
 
-## Comandi (previsti)
+## Comandi
 
 Frontend (`web/`):
 
@@ -83,7 +90,7 @@ npm run lint          # ESLint
 npm run format:check  # Prettier
 npm run typecheck     # tsc --noEmit
 npm test              # Vitest
-npm run build         # Vite → web/dist
+npm run build         # tsc + Vite → web/dist + check-bundle (niente segreti, niente cache dati)
 npm run e2e           # Playwright (WebKit iPhone + Chromium desktop)
 ```
 
@@ -91,23 +98,25 @@ Edge Functions (`supabase/functions/`):
 
 ```bash
 deno fmt --check && deno lint && deno check **/*.ts
-deno test --allow-env --allow-read   # client EB con risposte mockate
+deno test --allow-env --allow-read
 ```
 
 Database (richiede Docker; in CI lo stack gira nel runner):
 
 ```bash
-supabase start                       # stack locale
+export SITE_URL=http://127.0.0.1:4173   # richiesto da config.toml
+supabase start -x studio,imgproxy,vector,logflare,supavisor,mailpit,realtime,storage-api
 supabase db reset                    # applica tutte le migrazioni su DB pulito + seed
-supabase test db                     # pgTAP
-supabase db lint --level warning
+supabase test db                     # pgTAP (supabase/tests)
+supabase db lint --level warning --fail-on warning
+PUBLISHABLE_KEY=$(supabase status -o json | jq -r .PUBLISHABLE_KEY) scripts/check-data-api-exposure.sh
 supabase gen types typescript --local --schema api > web/src/lib/database.types.ts
 ```
 
 Controlli trasversali:
 
 ```bash
-gitleaks detect --no-banner          # anche prima di ogni commit dell'agente
+gitleaks git --no-banner --redact .  # anche prima di ogni commit dell'agente
 scripts/check-destructive-migrations.sh origin/main
 ```
 
@@ -119,19 +128,24 @@ scripts/check-destructive-migrations.sh origin/main
   `set search_path = ''` e nomi qualificati. Trasformazioni in SQL, non in Deno.
 - **TypeScript**: `strict`, niente `any`, errori tipizzati; nessun `console.log`
   di payload bancari (usare il logger che redige IBAN/importi/descrizioni).
-- **Edge Functions**: `@supabase/server` (`withSupabase`) per l'autenticazione;
-  `verify_jwt = false` solo per `eb-callback`, `sync-worker` (token cron) e
-  `health` (token health). Import da `npm:`/`jsr:` con versione fissata.
+- **Edge Functions**: logica in `handler.ts` puro e testabile (dipendenze
+  iniettate), `index.ts` solo wiring. `@supabase/server` (`withSupabase`) per le
+  function chiamate dall'utente; `verify_jwt = false` solo per `eb-callback`,
+  `sync-worker` (token cron) e `health` (token health). Schemi interni via
+  `_shared/db.ts` (connessione diretta). Log solo con `_shared/log.ts`.
+  Import `npm:`/`jsr:` con versione fissata.
 - **Commit**: Conventional Commits in italiano o inglese (`feat:`, `fix:`,
   `chore:`, `docs:`, `test:`), messaggi descrittivi.
-- **Branch**: `fase-N-descrizione` per le fasi; mai push diretti su `main`.
+- **Branch**: vedi regole sopra; mai push diretti su `main`.
 
-## Ambiente dell'agente (stato verificato in Fase 0)
+## Ambiente dell'agente (verificato in Fase 1)
 
-- Disponibili: Node 22, npm, Postgres 16 (server + psql), Docker (daemon da
-  avviare con `dockerd`), Deno via npm, Supabase CLI da GitHub Releases.
-- **Pull Docker limitati** (rate limit Docker Hub / ECR): lo stack Supabase
-  completo si esegue in **GitHub Actions**; in locale si usa Postgres 16 per
-  verifiche SQL rapide.
-- Rete: bloccati `enablebanking.com`, `supabase.com`, `cloudflare.com`; raggiungibili
-  registry npm/JSR/PyPI e GitHub (sola lettura dei repo pubblici).
+- Node 22 e npm preinstallati; Docker presente (avviare `dockerd` se il socket
+  manca); Supabase CLI e Deno si scaricano dalle release ufficiali in una
+  cartella temporanea (non nel repo); Chromium di Playwright in
+  `/opt/pw-browsers/chromium` → `CHROMIUM_PATH=/opt/pw-browsers/chromium`
+  per `npm run e2e -- --project=desktop-chromium` e `npm run icons`. WebKit gira solo in CI.
+- Lo stack Supabase completo funziona in locale. Le Edge Functions servite
+  dal container non scaricano dipendenze npm dietro il proxy dell'agente:
+  provarle con Deno sull'host (`DENO_CERT=/root/.ccr/ca-bundle.crt`) o in CI.
+- Rete aperta (documentazione ufficiale raggiungibile).

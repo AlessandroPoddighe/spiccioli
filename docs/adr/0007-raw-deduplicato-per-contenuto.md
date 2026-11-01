@@ -1,6 +1,6 @@
 # ADR-0007 — Layer `raw` deduplicato per contenuto
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

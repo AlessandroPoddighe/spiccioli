@@ -1,6 +1,6 @@
 # ADR-0008 — Sync a blocchi ripartibile e budget PSD2
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

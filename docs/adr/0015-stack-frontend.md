@@ -1,6 +1,6 @@
 # ADR-0015 — Stack frontend e PWA senza cache dei dati
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Decisione
 

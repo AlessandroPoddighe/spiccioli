@@ -1,6 +1,6 @@
 # ADR-0009 — Deduplica e transizione pending → booked
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

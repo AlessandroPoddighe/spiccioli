@@ -1,6 +1,6 @@
 # ADR-0001 — Hosting del frontend su Cloudflare Workers (Static Assets)
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 

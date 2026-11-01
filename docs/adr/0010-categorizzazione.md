@@ -1,6 +1,6 @@
 # ADR-0010 — Categorizzazione materializzata con precedenze
 
-Stato: Proposto
+Stato: Accettato (2026-11-01)
 
 ## Contesto
 
