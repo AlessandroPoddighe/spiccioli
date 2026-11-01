@@ -37,7 +37,18 @@ export async function handleHealth(req: Request, deps: HealthDeps): Promise<Resp
       },
     })
   } catch (err) {
-    log.error('health.db_failed', { error_type: err instanceof Error ? err.name : 'unknown' })
+    log.error('health.db_failed', {
+      error_type: err instanceof Error ? err.name : 'unknown',
+      error_code: errorCode(err),
+      error_message: err instanceof Error ? err.message : undefined,
+    })
     return json({ ok: false, error: 'db_unavailable' }, { status: 503 })
   }
+}
+
+function errorCode(err: unknown): string | undefined {
+  if (typeof err === 'object' && err !== null && 'code' in err) {
+    return String(err.code)
+  }
+  return undefined
 }

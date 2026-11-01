@@ -12,16 +12,19 @@ export type LogFields = Record<string, LogValue>
 const IBAN = /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g
 const LONG_TOKEN = /\b[A-Za-z0-9_\-.]{32,}\b/g
 const SENSITIVE_KEYS = /(iban|amount|importo|description|remittance|name|token|key|secret|code)/i
+// Chiavi diagnostiche che contengono parole "sensibili" ma non dati sensibili.
+const SAFE_KEYS = new Set(['error_code', 'status_code', 'error_type'])
 
 export function redact(value: LogValue): LogValue {
   if (typeof value !== 'string') return value
   return value.replace(IBAN, '[IBAN]').replace(LONG_TOKEN, '[REDATTO]')
 }
 
-function format(level: string, event: string, fields: LogFields): string {
+export function format(level: string, event: string, fields: LogFields): string {
   const safe: LogFields = {}
   for (const [k, v] of Object.entries(fields)) {
-    safe[k] = SENSITIVE_KEYS.test(k) && typeof v === 'string' ? '[REDATTO]' : redact(v)
+    const sensitive = !SAFE_KEYS.has(k) && SENSITIVE_KEYS.test(k)
+    safe[k] = sensitive && typeof v === 'string' ? '[REDATTO]' : redact(v)
   }
   return JSON.stringify({ level, event, ...safe })
 }

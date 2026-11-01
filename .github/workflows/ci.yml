@@ -105,7 +105,9 @@ jobs:
             sleep 2
           done
           test "$(curl -s -o /dev/null -w '%{http_code}' "$url")" = "401"
-          curl -sf -H "x-health-token: $HEALTH_TOKEN" "$url" | jq -e '.ok == true and .db.db == true'
+          body="$(curl -s -H "x-health-token: $HEALTH_TOKEN" "$url")"
+          echo "$body"
+          jq -e '.ok == true and .db.db == true' <<<"$body"
       - name: Log dello stack in caso di errore
         if: failure()
         run: |
