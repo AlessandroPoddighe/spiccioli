@@ -80,12 +80,13 @@ jobs:
           version: ${{ env.SUPABASE_CLI_VERSION }}
       - name: Token di prova per la function health (solo stack locale)
         run: echo "HEALTH_TOKEN=ci-$(openssl rand -hex 16)" > supabase/functions/.env
-      - name: Avvio stack Supabase (applica tutte le migrazioni + seed)
+      # Il runner è sempre nuovo: supabase start applica tutte le migrazioni
+      # a un database vuoto. (Un "db reset" qui ricreerebbe il container del DB
+      # e le Edge Functions già avviate non ne risolverebbero più il nome.)
+      - name: Avvio stack e migrazioni su DB pulito
         run: >
           supabase start
           -x studio,imgproxy,vector,logflare,supavisor,mailpit,realtime,storage-api
-      - name: Migrazioni riapplicabili da zero
-        run: supabase db reset
       - name: Test pgTAP (schema, RLS, privilegi)
         run: supabase test db
       - name: Lint dello schema
