@@ -64,7 +64,7 @@ jobs:
           deno-version: ${{ env.DENO_VERSION }}
       - run: deno fmt --check
       - run: deno lint
-      - run: deno check **/*.ts
+      - run: deno check .
       - run: deno test --allow-env --allow-read
 
   database:
@@ -92,13 +92,14 @@ jobs:
         run: supabase db lint --level warning --fail-on warning
       - name: Solo lo schema api è esposto
         run: |
-          export PUBLISHABLE_KEY=$(supabase status -o json | jq -r .PUBLISHABLE_KEY)
+          PUBLISHABLE_KEY="$(supabase status -o json | jq -r .PUBLISHABLE_KEY)"
+          export PUBLISHABLE_KEY
           scripts/check-data-api-exposure.sh
       - name: Function health risponde
         run: |
           source supabase/functions/.env
           url=http://127.0.0.1:54321/functions/v1/health
-          for i in $(seq 1 30); do
+          for _ in $(seq 1 30); do
             code=$(curl -s -o /dev/null -w '%{http_code}' "$url" || true)
             [ "$code" = "401" ] && break
             sleep 2
@@ -107,7 +108,9 @@ jobs:
           curl -sf -H "x-health-token: $HEALTH_TOKEN" "$url" | jq -e '.ok == true and .db.db == true'
       - name: Log dello stack in caso di errore
         if: failure()
-        run: docker ps -a && docker logs supabase_edge_runtime_spiccioli 2>&1 | tail -50 || true
+        run: |
+          docker ps -a || true
+          docker logs supabase_edge_runtime_spiccioli 2>&1 | tail -50 || true
 
   e2e:
     name: E2E Playwright (iPhone WebKit + desktop Chromium)

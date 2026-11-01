@@ -97,7 +97,7 @@ npm run e2e           # Playwright (WebKit iPhone + Chromium desktop)
 Edge Functions (`supabase/functions/`):
 
 ```bash
-deno fmt --check && deno lint && deno check **/*.ts
+deno fmt --check && deno lint && deno check .
 deno test --allow-env --allow-read
 ```
 
