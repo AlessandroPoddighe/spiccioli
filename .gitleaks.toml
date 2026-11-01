@@ -1,0 +1,21 @@
+# Configurazione gitleaks: regole di default + chiavi Supabase ed Enable Banking.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-secret-key"
+description = "Supabase secret key (ex service_role)"
+regex = '''sb_secret_[A-Za-z0-9_-]{20,}'''
+keywords = ["sb_secret_"]
+
+[[rules]]
+id = "private-key-pem"
+description = "Chiave privata PEM (es. Enable Banking)"
+regex = '''-----BEGIN (RSA |EC )?PRIVATE KEY-----'''
+keywords = ["private key"]
+
+[[rules]]
+id = "supabase-personal-access-token"
+description = "Supabase personal access token"
+regex = '''sbp_[A-Za-z0-9]{20,}'''
+keywords = ["sbp_"]

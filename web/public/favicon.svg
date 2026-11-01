@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <circle cx="256" cy="256" r="168" fill="#14b8a6"/>
+  <circle cx="256" cy="256" r="136" fill="none" stroke="#042f2e" stroke-width="12"/>
+  <text x="256" y="256" text-anchor="middle" dominant-baseline="central"
+        font-family="Helvetica, Arial, sans-serif" font-size="200" font-weight="700" fill="#042f2e">€</text>
+</svg>

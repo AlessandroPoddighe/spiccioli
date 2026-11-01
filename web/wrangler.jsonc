@@ -1,0 +1,26 @@
+// Cloudflare Workers con Static Assets (ADR-0001): nessuno script server-side.
+// prod:  npx wrangler deploy            → worker "spiccioli"
+// dev:   npx wrangler deploy --env dev  → worker "spiccioli-dev"
+// I deploy li esegue SOLO GitHub Actions.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "spiccioli",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
+  "env": {
+    "dev": {
+      "name": "spiccioli-dev",
+      "workers_dev": true,
+      "preview_urls": false,
+      "assets": {
+        "directory": "./dist",
+        "not_found_handling": "single-page-application",
+      },
+    },
+  },
+}
