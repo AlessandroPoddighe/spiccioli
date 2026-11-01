@@ -8,9 +8,11 @@ set -euo pipefail
 url="${SUPABASE_URL:-http://127.0.0.1:54321}"
 key="${PUBLISHABLE_KEY:?PUBLISHABLE_KEY mancante}"
 status=0
+# Credenziali fittizie generate al volo (mai valori fissi nel repository).
+fake_password="Fittizia-$(openssl rand -hex 12)"
 
 body=$(curl -s -X POST "$url/auth/v1/signup" -H "apikey: $key" -H "Content-Type: application/json" \
-  -d '{"email":"registrazione-vietata@example.test","password":"Prova-Registrazione-1234"}')
+  -d "{\"email\":\"registrazione-vietata@example.test\",\"password\":\"$fake_password\"}")
 if grep -q '"signup_disabled"' <<<"$body"; then
   echo "OK   registrazioni pubbliche disattivate"
 else
@@ -22,7 +24,7 @@ fi
 # non "provider email disattivato" (che bloccherebbe anche il tuo accesso).
 body=$(curl -s -X POST "$url/auth/v1/token?grant_type=password" -H "apikey: $key" \
   -H "Content-Type: application/json" \
-  -d '{"email":"nessuno@example.test","password":"Credenziali-Inventate-1234"}')
+  -d "{\"email\":\"nessuno@example.test\",\"password\":\"$fake_password\"}")
 if grep -q '"invalid_credentials"' <<<"$body"; then
   echo "OK   login con email attivo"
 else
