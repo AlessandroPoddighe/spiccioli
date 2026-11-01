@@ -78,8 +78,12 @@ jobs:
       - uses: supabase/setup-cli@v3
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
-      - name: Token di prova per la function health (solo stack locale)
-        run: echo "HEALTH_TOKEN=ci-$(openssl rand -hex 16)" > supabase/functions/.env
+      - name: Variabili delle function per lo stack locale (mai usate in cloud)
+        run: |
+          {
+            echo "HEALTH_TOKEN=ci-$(openssl rand -hex 16)"
+            echo "LOCAL_DB_URL=postgresql://postgres:postgres@db:5432/postgres"
+          } > supabase/functions/.env
       # Il runner è sempre nuovo: supabase start applica tutte le migrazioni
       # a un database vuoto. (Un "db reset" qui ricreerebbe il container del DB
       # e le Edge Functions già avviate non ne risolverebbero più il nome.)
