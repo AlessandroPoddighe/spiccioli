@@ -1,0 +1,26 @@
+name: Deploy produzione
+
+# Solo su push in main (cioè al merge di una PR). L'Environment "production"
+# accetta solo il branch main: i suoi segreti non sono leggibili da altri branch.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Produzione
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      include_all: false
+      wrangler_env: ''
+      build_info: ${{ format('{0}', github.sha) }}
+    secrets: inherit

@@ -1,0 +1,7 @@
+# Falsi positivi verificati a mano. Ogni riga ignora UN solo ritrovamento
+# (commit:file:regola:riga), mai una regola intera.
+#
+# Password fittizia ("Credenziali-Inventate-1234") usata per verificare che il
+# login rispondesse "credenziali errate"; sostituita con un valore generato a
+# runtime nel commit successivo.
+11a348d2327574a1e5158410d512470e894b5806:scripts/check-signup-disabled.sh:generic-api-key:25

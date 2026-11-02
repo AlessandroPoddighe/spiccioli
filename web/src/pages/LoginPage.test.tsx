@@ -26,7 +26,15 @@ function renderLogin(signInWithPassword: ReturnType<typeof vi.fn>) {
         buildInfo: 'test',
       }}
     >
-      <AuthContext value={{ supabase, session: null, loading: false }}>
+      <AuthContext
+        value={{
+          supabase,
+          session: null,
+          assurance: null,
+          loading: false,
+          refreshAssurance: () => Promise.resolve(),
+        }}
+      >
         <RouterProvider router={router} />
       </AuthContext>
     </ConfigContext>,

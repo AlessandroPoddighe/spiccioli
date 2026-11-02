@@ -6,7 +6,7 @@ Architettura: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Decisioni:
 [`docs/adr/`](docs/adr/README.md). Guida utente: `docs/SETUP.md`,
 `docs/OPERATIONS.md`.
 
-> Stato: **Fase 1 (scaffolding)**. Le voci marcate *(fase N)* non esistono ancora.
+> Stato: **Fase 2 (cloud e CD)**. Le voci marcate *(fase N)* non esistono ancora.
 
 ## Regole non negoziabili
 
@@ -42,9 +42,10 @@ Architettura: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Decisioni:
 ├── .github/
 │   ├── dependabot.yml
 │   └── workflows/
-│       ├── ci.yml            # PR: web, functions, database, e2e, security (+ deploy-dev in fase 2)
-│       ├── deploy-prod.yml   # (fase 2) push su main: migrazioni → functions → frontend
-│       ├── reset-dev.yml     # (fase 2) manuale
+│       ├── ci.yml            # PR: web, functions, database, e2e, security → deploy-dev + link nella PR
+│       ├── deploy.yml        # riusabile: preflight → migrazioni+config → functions → frontend → verifiche
+│       ├── deploy-prod.yml   # push su main → deploy.yml (production)
+│       ├── reset-dev.yml     # manuale, conferma "RESET": ricrea il DB di dev da main
 │       ├── backup.yml        # (fase 7) schedulato (prod)
 │       ├── restore.yml       # (fase 7) manuale
 │       └── keepalive.yml     # (fase 7) schedulato (dev + prod)
@@ -56,7 +57,9 @@ Architettura: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Decisioni:
 ├── .gitleaks.toml            # regole extra: sb_secret_, sbp_, PEM
 ├── scripts/
 │   ├── check-destructive-migrations.sh   # CI: solo migrazioni additive
-│   └── check-data-api-exposure.sh        # CI: solo lo schema api è esposto
+│   ├── check-data-api-exposure.sh        # CI e post-deploy: solo lo schema api è esposto
+│   ├── check-signup-disabled.sh          # CI e post-deploy: niente registrazioni, login email attivo
+│   └── e2e-create-users.sh               # solo stack locale: utenti per Playwright
 ├── supabase/
 │   ├── config.toml           # fonte di verità della config (ADR-0016)
 │   ├── migrations/           # YYYYMMDDHHMMSS_descrizione.sql
@@ -76,7 +79,7 @@ Architettura: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Decisioni:
     ├── vite.config.ts        # genera dist/_headers (CSP) e il service worker
     ├── scripts/              # check-bundle.mjs (post-build), generate-icons.mjs
     ├── public/               # favicon + icone PWA (PNG generati e committati)
-    ├── src/                  # app (env.ts, routes.tsx, auth/, pages/, components/)
+    ├── src/                  # app (env.ts, routes.tsx, auth/ con MFA, pages/, components/)
     └── e2e/                  # Playwright
 ```
 
@@ -92,6 +95,8 @@ npm run typecheck     # tsc --noEmit
 npm test              # Vitest
 npm run build         # tsc + Vite → web/dist + check-bundle (niente segreti, niente cache dati)
 npm run e2e           # Playwright (WebKit iPhone + Chromium desktop)
+# e2e del login con MFA: richiede lo stack locale, gli utenti di prova e
+# E2E_PASSWORD (vedi job e2e in ci.yml); senza E2E_PASSWORD quei test si saltano.
 ```
 
 Edge Functions (`supabase/functions/`):
@@ -146,6 +151,11 @@ scripts/check-destructive-migrations.sh origin/main
   cartella temporanea (non nel repo); Chromium di Playwright in
   `/opt/pw-browsers/chromium` → `CHROMIUM_PATH=/opt/pw-browsers/chromium`
   per `npm run e2e -- --project=desktop-chromium` e `npm run icons`. WebKit gira solo in CI.
+- `[auth.email] enable_signup = false` in config.toml disattiva TUTTO il login
+  email: le registrazioni si chiudono solo con `[auth] enable_signup = false`
+  (verificato da `check-signup-disabled.sh`).
+- Edge Functions in locale/CI: `LOCAL_DB_URL` in `supabase/functions/.env`
+  (alias `db`), perché il resolver dell'Edge Runtime rifiuta l'host con `_`.
 - Lo stack Supabase completo funziona in locale. Le Edge Functions servite
   dal container non scaricano dipendenze npm dietro il proxy dell'agente:
   provarle con Deno sull'host (`DENO_CERT=/root/.ccr/ca-bundle.crt`) o in CI.

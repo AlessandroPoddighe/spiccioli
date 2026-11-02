@@ -6,6 +6,13 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # typescript-eslint supporta TypeScript < 6.1: niente TS 7 finché non lo supporta.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      # I tipi di Node seguono la versione di Node usata (22 LTS), non l'ultima.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       dev-dependencies:
         dependency-type: development
